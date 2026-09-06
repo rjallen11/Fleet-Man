@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipment & Fleet Tracker</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --accent: #2e7d32;
+            --accent-hover: #388e3c;
+            --text-main: #ffffff;
+            --text-muted: #b0bec5;
+            --border-color: #333333;
+            --danger: #c62828;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        h1, h2, h3 { margin: 0; }
+
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover { background-color: var(--accent-hover); }
+        button.btn-secondary { background-color: #424242; }
+        button.btn-secondary:hover { background-color: #616161; }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .equipment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .equipment-item:hover { border-color: var(--accent); }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            background-color: #2b2b2b;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .hidden { display: none; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th { color: var(--text-muted); }
+
+        .tag {
+            background-color: #333;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>🚜 Equipment Tracker</h1>
+        <button id="btn-add-eq" onclick="showView('view-add-equipment')">+ Add Machine</button>
+    </header>
+
+    <div id="view-dashboard">
+        <h2>Inventory</h2>
+        <div id="equipment-list" style="margin-top: 15px;"></div>
+    </div>
+
+    <div id="view-add-equipment" class="card hidden">
+        <h2>Add New Equipment</h2>
+        <form id="form-equipment" onsubmit="handleSaveEquipment(event)" style="margin-top: 15px;">
+            <div class="form-group">
+                <label>Equipment Name / Title</label>
+                <input type="text" id="eq-name" placeholder="e.g. John Deere 6155M" required>
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Make</label>
+                    <input type="text" id="eq-make" placeholder="John Deere" required>
+                </div>
+                <div class="form-group">
+                    <label>Model</label>
+                    <input type="text" id="eq-model" placeholder="6155M" required>
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Year</label>
+                    <input type="number" id="eq-year" placeholder="2020">
+                </div>
+                <div class="form-group">
+                    <label>Current Hours</label>
+                    <input type="number" step="0.1" id="eq-hours" placeholder="1250.5" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Serial Number (PIN)</label>
+                <input type="text" id="eq-sn" placeholder="1RW6155M...">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="submit">Save Equipment</button>
+                <button type="button" class="btn-secondary" onclick="showView('view-dashboard')">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="view-detail" class="hidden">
+        <button class="btn-secondary" onclick="showView('view-dashboard')" style="margin-bottom: 15px;">← Back to Dashboard</button>
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h2 id="detail-name">Machine Name</h2>
+                    <p style="color: var(--text-muted); margin: 5px 0;" id="detail-specs">Make Model • Year</p>
+                    <p style="font-size: 0.9em;" id="detail-sn">S/N: -</p>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 1.5em; font-weight: bold;" id="detail-hours">0 hrs</div>
+                    <button class="btn-secondary" style="margin-top: 5px; font-size: 0.8em;" onclick="promptUpdateHours()">Update Hours</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3>Maintenance History</h3>
+                <button onclick="showView('view-add-maintenance')">+ Log Service</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Hours</th>
+                        <th>Service Description</th>
+                        <th>Cost</th>
+                    </tr>
+                </thead>
+                <tbody id="maintenance-list"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="view-add-maintenance" class="card hidden">
+        <h2>Log Maintenance Activity</h2>
+        <form id="form-maintenance" onsubmit="handleSaveMaintenance(event)" style="margin-top: 15px;">
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Service Date</label>
+                    <input type="date" id="maint-date" required>
+                </div>
+                <div class="form-group">
+                    <label>Hours at Service</label>
+                    <input type="number" step="0.1" id="maint-hours" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Description / Parts Replaced</label>
+                <textarea id="maint-desc" rows="3" placeholder="Oil filter change, hydraulic fluid flush..." required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Total Cost ($)</label>
+                <input type="number" step="0.01" id="maint-cost" placeholder="150.00" required>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="submit">Save Log</button>
+                <button type="button" class="btn-secondary" onclick="showView('view-detail')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // State Management
+    let equipmentList = JSON.parse(localStorage.getItem('eq_data')) || [];
+    let selectedEquipmentId = null;
+
+    function saveState() {
+        localStorage.setItem('eq_data', JSON.stringify(equipmentList));
+    }
+
+    function showView(viewId) {
+        ['view-dashboard', 'view-add-equipment', 'view-detail', 'view-add-maintenance'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+        document.getElementById(viewId).classList.remove('hidden');
+
+        if (viewId === 'view-dashboard') {
+            document.getElementById('btn-add-eq').classList.remove('hidden');
+            renderDashboard();
+        } else {
+            document.getElementById('btn-add-eq').classList.add('hidden');
+        }
+    }
+
+    function renderDashboard() {
+        const container = document.getElementById('equipment-list');
+        container.innerHTML = '';
+
+        if (equipmentList.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted);">No equipment added yet. Click "+ Add Machine" to start.</p>';
+            return;
+        }
+
+        equipmentList.forEach(eq => {
+            const card = document.createElement('div');
+            card.className = 'card equipment-item';
+            card.onclick = () => openEquipmentDetail(eq.id);
+            card.innerHTML = `
+                <div>
+                    <h3 style="margin-bottom: 5px;">${escapeHtml(eq.name)}</h3>
+                    <span class="tag">${escapeHtml(eq.make)} ${escapeHtml(eq.model)}</span>
+                </div>
+                <div style="font-weight: bold; font-size: 1.1em;">${eq.hours} hrs</div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function handleSaveEquipment(e) {
+        e.preventDefault();
+        const newEq = {
+            id: Date.now().toString(),
+            name: document.getElementById('eq-name').value,
+            make: document.getElementById('eq-make').value,
+            model: document.getElementById('eq-model').value,
+            year: document.getElementById('eq-year').value,
+            hours: parseFloat(document.getElementById('eq-hours').value) || 0,
+            sn: document.getElementById('eq-sn').value,
+            history: []
+        };
+
+        equipmentList.push(newEq);
+        saveState();
+        document.getElementById('form-equipment').reset();
+        showView('view-dashboard');
+    }
+
+    function openEquipmentDetail(id) {
+        selectedEquipmentId = id;
+        const eq = equipmentList.find(e => e.id === id);
+        if (!eq) return;
+
+        document.getElementById('detail-name').innerText = eq.name;
+        document.getElementById('detail-specs').innerText = `${eq.make} ${eq.model} ${eq.year ? '• ' + eq.year : ''}`;
+        document.getElementById('detail-sn').innerText = `S/N: ${eq.sn || 'N/A'}`;
+        document.getElementById('detail-hours').innerText = `${eq.hours} hrs`;
+
+        renderMaintenanceHistory(eq);
+        showView('view-detail');
+    }
+
+    function renderMaintenanceHistory(eq) {
+        const tbody = document.getElementById('maintenance-list');
+        tbody.innerHTML = '';
+
+        if (eq.history.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="color: var(--text-muted); text-align: center;">No records logged.</td></tr>';
+            return;
+        }
+
+        eq.history.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(log => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${log.date}</td>
+                <td>${log.hours}</td>
+                <td>${escapeHtml(log.description)}</td>
+                <td>$${parseFloat(log.cost).toFixed(2)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function promptUpdateHours() {
+        const eq = equipmentList.find(e => e.id === selectedEquipmentId);
+        if (!eq) return;
+        const newHours = prompt(`Update meter hours for ${eq.name}:`, eq.hours);
+        if (newHours !== null && !isNaN(parseFloat(newHours))) {
+            eq.hours = parseFloat(newHours);
+            saveState();
+            openEquipmentDetail(eq.id);
+        }
+    }
+
+    function handleSaveMaintenance(e) {
+        e.preventDefault();
+        const eq = equipmentList.find(e => e.id === selectedEquipmentId);
+        if (!eq) return;
+
+        const serviceHours = parseFloat(document.getElementById('maint-hours').value);
+        const record = {
+            id: Date.now().toString(),
+            date: document.getElementById('maint-date').value,
+            hours: serviceHours,
+            description: document.getElementById('maint-desc').value,
+            cost: parseFloat(document.getElementById('maint-cost').value) || 0
+        };
+
+        eq.history.push(record);
+        if (serviceHours > eq.hours) {
+            eq.hours = serviceHours;
+        }
+
+        saveState();
+        document.getElementById('form-maintenance').reset();
+        openEquipmentDetail(eq.id);
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // Set default date picker to today
+    document.getElementById('maint-date').valueAsDate = new Date();
+
+    // Initial render
+    renderDashboard();
+</script>
+</body>
+</html>
