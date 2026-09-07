@@ -63,7 +63,19 @@
         .log-item { border-left: 4px solid var(--primary); padding-left: 0.5rem; margin-top: 0.5rem; }
         .hidden { display: none !important; }
 
-        .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+        /* Modal styling */
+        .modal-backdrop { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh; 
+            background: rgba(0,0,0,0.6); 
+            z-index: 300; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 1rem; 
+        }
         .modal-content { background: white; border-radius: 8px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 1.5rem; }
     </style>
 </head>
@@ -210,7 +222,8 @@
     </div>
 </div>
 
-<div id="edit-modal" class="modal hidden">
+<!-- EDIT EQUIPMENT MODAL (Strictly display:none on boot) -->
+<div id="edit-modal" class="modal-backdrop" style="display: none;">
     <div class="modal-content">
         <div class="card-title" style="margin-bottom: 1rem;">Edit Equipment Info</div>
         <form id="edit-form" onsubmit="updateMachine(event)">
@@ -272,7 +285,10 @@
 
         document.getElementById('l-date').valueAsDate = new Date();
         
-        // Always boot to "My Shop" homepage
+        // Ensure modal is strictly hidden on initialization
+        closeEditModal();
+
+        // Boot directly to "My Shop"
         switchTab('shop', 'My Shop');
     }
 
@@ -379,11 +395,13 @@
         document.getElementById('edit-m-hours').value = m.hours;
         document.getElementById('edit-m-specs').value = m.specs || '';
 
-        document.getElementById('edit-modal').classList.remove('hidden');
+        // Explicitly set flex display
+        document.getElementById('edit-modal').style.display = 'flex';
     }
 
     function closeEditModal() {
-        document.getElementById('edit-modal').classList.add('hidden');
+        // Explicitly set none display
+        document.getElementById('edit-modal').style.display = 'none';
     }
 
     function updateMachine(e) {
