@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fleet & Equipment Maintenance Tracker</title>
+    <title>My Shop - Equipment Tracker</title>
     <style>
         :root {
             --primary: #2e7d32;
@@ -36,6 +36,11 @@
 
         .container { max-width: 800px; margin: 0 auto; padding: 1rem; }
 
+        .stats-banner { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 1rem; }
+        .stat-card { background: var(--surface); padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
+        .stat-val { font-size: 1.2rem; font-weight: bold; color: var(--primary-dark); }
+        .stat-lbl { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; margin-top: 0.2rem; }
+
         .card { background: var(--surface); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
         .card-title { font-size: 1.1rem; font-weight: bold; color: var(--primary-dark); }
@@ -45,7 +50,7 @@
         .grid-item span { display: block; color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase; }
 
         .btn-group { display: flex; gap: 0.5rem; margin-top: 1rem; }
-        .btn { background: var(--primary); color: white; border: none; padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; text-align: center; width: 100%; }
+        .btn { background: var(--primary); color: white; border: none; padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; text-align: center; width: 100%; display: inline-block; text-decoration: none; }
         .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; width: auto; }
         .btn-danger { background: var(--danger); }
         .btn-secondary { background: #757575; }
@@ -66,7 +71,7 @@
 
 <header>
     <button class="menu-btn" onclick="toggleSidebar()">☰</button>
-    <div class="header-title" id="page-title">Fleet Dashboard</div>
+    <div class="header-title" id="page-title">My Shop</div>
     <div style="width: 24px;"></div>
 </header>
 
@@ -78,7 +83,7 @@
         <button class="sidebar-close" onclick="toggleSidebar()">✕</button>
     </div>
     <div class="sidebar-nav">
-        <button class="nav-link" id="nav-machines" onclick="switchTab('machines', 'Fleet Dashboard')">🚜 Machines Overview</button>
+        <button class="nav-link" id="nav-shop" onclick="switchTab('shop', 'My Shop')">🏡 My Shop</button>
         <button class="nav-link" id="nav-add-machine" onclick="switchTab('add-machine', 'Add Equipment')">➕ Add New Machine</button>
         <button class="nav-link" id="nav-add-log" onclick="switchTab('add-log', 'Log Service')">📝 Record Service Entry</button>
         <button class="nav-link" id="nav-settings" onclick="switchTab('settings', 'Data Settings')">⚙️ Data & Backup</button>
@@ -86,10 +91,27 @@
 </div>
 
 <div class="container">
-    <div id="tab-machines">
-        <div id="machine-list"></div>
+    <!-- MY SHOP / HOME TAB -->
+    <div id="tab-shop">
+        <div class="stats-banner">
+            <div class="stat-card">
+                <div class="stat-val" id="stat-count">0</div>
+                <div class="stat-lbl">Machines</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" id="stat-hours">0</div>
+                <div class="stat-lbl">Total Hours</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" id="stat-logs">0</div>
+                <div class="stat-lbl">Services</div>
+            </div>
+        </div>
+
+        <div id="shop-machine-list"></div>
     </div>
 
+    <!-- ADD MACHINE TAB -->
     <div id="tab-add-machine" class="hidden">
         <div class="card">
             <div class="card-title" style="margin-bottom: 1rem;">Add New Equipment</div>
@@ -133,6 +155,7 @@
         </div>
     </div>
 
+    <!-- LOG SERVICE TAB -->
     <div id="tab-add-log" class="hidden">
         <div class="card">
             <div class="card-title" style="margin-bottom: 1rem;">Record Service Entry</div>
@@ -174,6 +197,7 @@
         </div>
     </div>
 
+    <!-- SETTINGS TAB -->
     <div id="tab-settings" class="hidden">
         <div class="card">
             <div class="card-title" style="margin-bottom: 1rem;">Data Management</div>
@@ -248,11 +272,8 @@
 
         document.getElementById('l-date').valueAsDate = new Date();
         
-        if (db.machines.length === 0) {
-            switchTab('add-machine', 'Add Equipment');
-        } else {
-            switchTab('machines', 'Fleet Dashboard');
-        }
+        // Always boot to "My Shop" homepage
+        switchTab('shop', 'My Shop');
     }
 
     function saveToStorage() {
@@ -271,12 +292,12 @@
         const targetTab = document.getElementById(`tab-${tabName}`);
         if (targetTab) targetTab.classList.remove('hidden');
         
-        document.getElementById('page-title').innerText = pageTitle || 'Fleet Tracker';
+        document.getElementById('page-title').innerText = pageTitle || 'My Shop';
 
         const activeBtn = document.getElementById(`nav-${tabName}`);
         if (activeBtn) activeBtn.classList.add('active');
 
-        if (tabName === 'machines') renderMachines();
+        if (tabName === 'shop') renderShopHome();
         if (tabName === 'add-log') populateMachineDropdown();
 
         document.getElementById('sidebar').classList.remove('open');
@@ -339,10 +360,10 @@
             db.machines.push(newMachine);
             saveToStorage();
             document.getElementById('machine-form').reset();
-            switchTab('machines', 'Fleet Dashboard');
+            switchTab('shop', 'My Shop');
         } catch (err) {
             console.error('Save Machine Error:', err);
-            alert('Error saving machine. Check console for details.');
+            alert('Error saving machine.');
         }
     }
 
@@ -379,36 +400,41 @@
             m.specs = document.getElementById('edit-m-specs').value;
 
             saveToStorage();
-            renderMachines();
+            renderShopHome();
             closeEditModal();
         }
     }
 
-    function removeEquipment(id, reason) {
+    function removeEquipment(id) {
         const m = db.machines.find(item => item.id === id);
         if (!m) return;
 
-        const confirmMsg = reason === 'sold' 
-            ? `Mark "${m.name}" as sold/removed? This will delete the equipment and its maintenance history.`
-            : `Delete "${m.name}" permanently?`;
-
-        if (confirm(confirmMsg)) {
+        if (confirm(`Remove "${m.name}" from your shop? Associated logs will also be deleted.`)) {
             db.machines = db.machines.filter(item => item.id !== id);
             db.logs = db.logs.filter(log => log.machineId !== id);
             saveToStorage();
-            
-            if (db.machines.length === 0) {
-                switchTab('add-machine', 'Add Equipment');
-            } else {
-                renderMachines();
-            }
+            renderShopHome();
         }
     }
 
-    function renderMachines() {
-        const container = document.getElementById('machine-list');
+    function renderShopHome() {
+        // Update Stats Banner
+        document.getElementById('stat-count').innerText = db.machines.length;
+        
+        const totalHours = db.machines.reduce((acc, curr) => acc + (parseFloat(curr.hours) || 0), 0);
+        document.getElementById('stat-hours').innerText = totalHours.toFixed(1);
+        
+        document.getElementById('stat-logs').innerText = db.logs.length;
+
+        const container = document.getElementById('shop-machine-list');
+        
         if (db.machines.length === 0) {
-            container.innerHTML = `<div class="card" style="text-align: center; color: var(--text-secondary);">No equipment registered. Open menu to "+ Add New Machine".</div>`;
+            container.innerHTML = `
+                <div class="card" style="text-align: center; padding: 2rem 1rem;">
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">No equipment in your shop yet.</p>
+                    <button class="btn" onclick="switchTab('add-machine', 'Add Equipment')">➕ Add Your First Machine</button>
+                </div>
+            `;
             return;
         }
 
@@ -468,7 +494,7 @@
 
                     <div class="btn-group">
                         <button class="btn btn-sm btn-secondary" onclick="openEditModal('${m.id}')">✏️ Edit Details</button>
-                        <button class="btn btn-sm btn-danger" onclick="removeEquipment('${m.id}', 'sold')">🏷️ Remove / Sold</button>
+                        <button class="btn btn-sm btn-danger" onclick="removeEquipment('${m.id}')">🏷️ Remove / Sold</button>
                     </div>
                 </div>
             `;
@@ -512,7 +538,7 @@
             saveToStorage();
             document.getElementById('log-form').reset();
             document.getElementById('l-date').valueAsDate = new Date();
-            switchTab('machines', 'Fleet Dashboard');
+            switchTab('shop', 'My Shop');
         } catch (err) {
             console.error('Save Log Error:', err);
             alert('Error saving service entry.');
@@ -523,7 +549,7 @@
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
         const downloadAnchor = document.createElement('a');
         downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", `fleet_backup_${new Date().toISOString().slice(0,10)}.json`);
+        downloadAnchor.setAttribute("download", `shop_backup_${new Date().toISOString().slice(0,10)}.json`);
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
         downloadAnchor.remove();
@@ -537,8 +563,8 @@
                 if (importedData && Array.isArray(importedData.machines) && Array.isArray(importedData.logs)) {
                     db = importedData;
                     saveToStorage();
-                    alert('Data imported successfully!');
-                    switchTab('machines', 'Fleet Dashboard');
+                    alert('Shop data imported successfully!');
+                    switchTab('shop', 'My Shop');
                 } else {
                     alert('Invalid JSON file structure.');
                 }
@@ -553,7 +579,7 @@
         if(confirm('Erase all equipment and service logs? This cannot be undone.')) {
             db = { machines: [], logs: [] };
             saveToStorage();
-            switchTab('add-machine', 'Add Equipment');
+            switchTab('shop', 'My Shop');
         }
     }
 
